@@ -10,19 +10,23 @@ public class DCT
 		var height = (ushort)input.GetLength(0);
 		var width = (ushort)input.GetLength(1);
 		var coeffs = new double[width, height];
+		var beta = Beta(height, width);
 
 		MathEx.LoopByTwoVariables(
 			0, width,
 			0, height,
 			(u, v) =>
 			{
+				var alphaU = Alpha( u);
+				var alphaV = Alpha( v);
+				var alphaBeta = alphaU * alphaV*beta;
 				var sum = MathEx
 					.SumByTwoVariables(
 						0, width,
 						0, height,
 						(x, y) => BasisFunction(input[x, y], u, v, x, y, height, width));
 
-				coeffs[u, v] = sum * Beta(height, width) * Alpha(u) * Alpha(v);
+				coeffs[u, v] = sum * alphaBeta;
 			});
 
 		return coeffs;
@@ -32,6 +36,7 @@ public class DCT
 	{
 		var height = (ushort)coeffs.GetLength(0);
 		var width = (ushort)coeffs.GetLength(1);
+		var beta = Beta(height, width);
 		for (var x = 0; x <width; x++)
 		{
 			for (var y = 0; y < height; y++)
@@ -41,10 +46,14 @@ public class DCT
 						0, width,
 						0, height,
 						(u, v) =>
-							BasisFunction(coeffs[u, v], u, v, x, y, height, width) *
-							Alpha(u) * Alpha(v));
+						{
+							var alphaU = Alpha(u);
+							var alphaV = Alpha(v);
+							var alpha = alphaU * alphaV;
+							return BasisFunction(coeffs[u, v], u, v, x, y, height, width) * alpha;
+						});
 
-				output[x, y] = sum * Beta(height, width);
+				output[x, y] = sum * beta;
 			}
 		}
 	}
@@ -66,6 +75,6 @@ public class DCT
 
 	private static double Beta(int height, int width)
 	{
-		return 1d / width + 1d / height;
+		return 1d / (width + height);
 	}
 }
