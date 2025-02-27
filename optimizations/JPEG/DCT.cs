@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using JPEG.Utilities;
 
 namespace JPEG;
@@ -12,14 +13,14 @@ public class DCT
 		var coeffs = new double[width, height];
 		var beta = Beta(height, width);
 
-		MathEx.LoopByTwoVariables(
-			0, width,
-			0, height,
-			(u, v) =>
+		Parallel.For(0, width, u =>
+		{
+			for (var v = 0; v < height; v++)
 			{
-				var alphaU = Alpha( u);
-				var alphaV = Alpha( v);
-				var alphaBeta = alphaU * alphaV*beta;
+
+				var alphaU = Alpha(u);
+				var alphaV = Alpha(v);
+				var alphaBeta = alphaU * alphaV * beta;
 				var sum = MathEx
 					.SumByTwoVariables(
 						0, width,
@@ -27,8 +28,8 @@ public class DCT
 						(x, y) => BasisFunction(input[x, y], u, v, x, y, height, width));
 
 				coeffs[u, v] = sum * alphaBeta;
-			});
-
+			}
+		});
 		return coeffs;
 	}
 
@@ -37,7 +38,7 @@ public class DCT
 		var height = (ushort)coeffs.GetLength(0);
 		var width = (ushort)coeffs.GetLength(1);
 		var beta = Beta(height, width);
-		for (var x = 0; x <width; x++)
+		Parallel.For(0, width, x =>
 		{
 			for (var y = 0; y < height; y++)
 			{
@@ -55,7 +56,7 @@ public class DCT
 
 				output[x, y] = sum * beta;
 			}
-		}
+		});
 	}
 
 	public static double BasisFunction(double a, double u, double v, double x, double y, int height, int width)
