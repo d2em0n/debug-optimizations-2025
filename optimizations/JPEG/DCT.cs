@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using JPEG.Utilities;
 
 namespace JPEG;
@@ -22,25 +21,22 @@ public class DCT
         var coeffs = new double[width, height];
         var beta = Beta(height, width);
 
-        Parallel.For(0, width, u =>
+        for (var u = 0; u < width; u++)
         {
             for (var v = 0; v < height; v++)
             {
-                var alphaU = Alpha(u);
-                var alphaV = Alpha(v);
-                var alphaBeta = alphaU * alphaV * beta;
-                var sum = 0.0;
+                var sum = 0d;
 
                 for (var x = 0; x < width; x++)
                 {
                     for (var y = 0; y < height; y++)
                     {
-                        sum += coeffs[u, v] * CosTable[x, u] * CosTable[y, v] ;
+                        sum += input[x, y] * CosTable[u, x] * CosTable[v, y];
                     }
                 }
-                coeffs[u, v] = sum * alphaBeta;
+                coeffs[u, v] = sum * beta * Alpha(u) * Alpha(v);
             }
-        });
+        }
         return coeffs;
     }
 
@@ -49,32 +45,22 @@ public class DCT
         var height = coeffs.GetLength(0);
         var width = coeffs.GetLength(1);
         var beta = Beta(height, width);
-        Parallel.For(0, width, x =>
+        for (var x = 0; x <width; x++)
         {
             for (var y = 0; y < height; y++)
             {
-                var sum = 0.0;
-
+                var sum = 0d;
                 for (var u = 0; u < width; u++)
                 {
                     for (var v = 0; v < height; v++)
                     {
-                        sum += coeffs[u, v] * CosTable[x, u] * CosTable[y, v] *
-                               Alpha(u) * Alpha(v);
+                        sum += coeffs[u, v] * CosTable[u, x] * CosTable[v, y] *
+                            Alpha(u) * Alpha(v);
                     }
                 }
-
                 output[x, y] = sum * beta;
             }
-        });
-    }
-
-    public static double BasisFunction(double a, double u, double v, double x, double y, int height, int width)
-    {
-        var b = Math.Cos(((2d * x + 1d) * u * Math.PI) / (2 * width));
-        var c = Math.Cos(((2d * y + 1d) * v * Math.PI) / (2 * height));
-
-        return a * b * c;
+        }
     }
 
     private static double Alpha(int u)
@@ -86,6 +72,6 @@ public class DCT
 
     private static double Beta(int height, int width)
     {
-        return 1d / (width + height);
+        return 1d / width + 1d / height;
     }
 }
