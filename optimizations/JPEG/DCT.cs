@@ -8,8 +8,8 @@ public class DCT
 {
 	public static double[,] DCT2D(double[,] input)
 	{
-		var height = (ushort)input.GetLength(0);
-		var width = (ushort)input.GetLength(1);
+		var height = input.GetLength(0);
+		var width = input.GetLength(1);
 		var coeffs = new double[width, height];
 		var beta = Beta(height, width);
 
@@ -21,12 +21,15 @@ public class DCT
 				var alphaU = Alpha(u);
 				var alphaV = Alpha(v);
 				var alphaBeta = alphaU * alphaV * beta;
-				var sum = MathEx
-					.SumByTwoVariables(
-						0, width,
-						0, height,
-						(x, y) => BasisFunction(input[x, y], u, v, x, y, height, width));
+				var sum = 0.0;
 
+				for (var x = 0; x < width; x++)
+				{
+					for (var y = 0; y < height; y++)
+					{
+						sum += BasisFunction(input[x, y], u, v, x, y, height, width);
+					}
+				}
 				coeffs[u, v] = sum * alphaBeta;
 			}
 		});
@@ -35,25 +38,23 @@ public class DCT
 
 	public static void IDCT2D(double[,] coeffs, double[,] output)
 	{
-		var height = (ushort)coeffs.GetLength(0);
-		var width = (ushort)coeffs.GetLength(1);
+		var height = coeffs.GetLength(0);
+		var width = coeffs.GetLength(1);
 		var beta = Beta(height, width);
 		Parallel.For(0, width, x =>
 		{
 			for (var y = 0; y < height; y++)
 			{
-				var sum = MathEx
-					.SumByTwoVariables(
-						0, width,
-						0, height,
-						(u, v) =>
-						{
-							var alphaU = Alpha(u);
-							var alphaV = Alpha(v);
-							var alpha = alphaU * alphaV;
-							return BasisFunction(coeffs[u, v], u, v, x, y, height, width) * alpha;
-						});
+				var sum = 0.0;
 
+				for (var u = 0; u < width; u++)
+				{
+					for (var v = 0; v < height; v++)
+					{
+						sum += BasisFunction(coeffs[u, v], u, v, x, y, height, width) *
+						       Alpha(u) * Alpha(v);
+					}
+				}
 				output[x, y] = sum * beta;
 			}
 		});
