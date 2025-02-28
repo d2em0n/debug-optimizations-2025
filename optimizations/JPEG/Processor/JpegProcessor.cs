@@ -13,6 +13,12 @@ public class JpegProcessor : IJpegProcessor
 	public static readonly JpegProcessor Init = new();
 	public const int CompressionQuality = 70;
 	private const int DCTSize = 8;
+	private static int[,] _quantizationMatrix;
+
+	static JpegProcessor()
+	{
+		_quantizationMatrix = GetQuantizationMatrix(CompressionQuality);
+	}
 
 	public void Compress(string imagePath, string compressedImagePath)
 	{
@@ -190,13 +196,12 @@ public class JpegProcessor : IJpegProcessor
 	private static byte[,] Quantize(double[,] channelFreqs, int quality)
 	{
 		var result = new byte[channelFreqs.GetLength(0), channelFreqs.GetLength(1)];
-
-		var quantizationMatrix = GetQuantizationMatrix(quality);
+		
 		for (int y = 0; y < channelFreqs.GetLength(0); y++)
 		{
 			for (int x = 0; x < channelFreqs.GetLength(1); x++)
 			{
-				result[y, x] = (byte)(channelFreqs[y, x] / quantizationMatrix[y, x]);
+				result[y, x] = (byte)(channelFreqs[y, x] / _quantizationMatrix[y, x]);
 			}
 		}
 
@@ -206,15 +211,14 @@ public class JpegProcessor : IJpegProcessor
 	private static double[,] DeQuantize(byte[,] quantizedBytes, int quality)
 	{
 		var result = new double[quantizedBytes.GetLength(0), quantizedBytes.GetLength(1)];
-		var quantizationMatrix = GetQuantizationMatrix(quality);
-
+		
 		for (int y = 0; y < quantizedBytes.GetLength(0); y++)
 		{
 			for (int x = 0; x < quantizedBytes.GetLength(1); x++)
 			{
 				result[y, x] =
 					((sbyte)quantizedBytes[y, x]) *
-					quantizationMatrix[y, x]; //NOTE cast to sbyte not to loose negative numbers
+					_quantizationMatrix[y, x]; //NOTE cast to sbyte not to loose negative numbers
 			}
 		}
 
@@ -239,10 +243,13 @@ public class JpegProcessor : IJpegProcessor
 			{ 49, 64, 78, 87, 103, 121, 120, 101 },
 			{ 72, 92, 95, 98, 112, 100, 103, 99 }
 		};
+		
+		var height = result.GetLength(0);
+		var width = result.GetLength(1);
 
-		for (int y = 0; y < result.GetLength(0); y++)
+		for (var y = 0; y < height; y++)
 		{
-			for (int x = 0; x < result.GetLength(1); x++)
+			for (var x = 0; x < width; x++)
 			{
 				result[y, x] = (multiplier * result[y, x] + 50) / 100;
 			}
