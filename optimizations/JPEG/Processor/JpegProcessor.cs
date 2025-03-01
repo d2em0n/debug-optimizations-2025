@@ -14,6 +14,8 @@ public class JpegProcessor : IJpegProcessor
 	public const int CompressionQuality = 70;
 	private const int DCTSize = 8;
 	private static int[,] _quantizationMatrix;
+	private static byte[,] _quantizedBuffer = new byte[DCTSize, DCTSize];
+	private static double[,] _deQuantizedBuffer = new double[DCTSize, DCTSize];
 
 	static JpegProcessor()
 	{
@@ -51,7 +53,7 @@ public class JpegProcessor : IJpegProcessor
 					var subMatrix = GetSubMatrix(matrix, y, DCTSize, x, DCTSize, selector);
 					ShiftMatrixValues(subMatrix, -128);
 					var channelFreqs = DCT.DCT2D(subMatrix);
-					var quantizedFreqs = Quantize(channelFreqs, quality);
+					var quantizedFreqs = Quantize(channelFreqs);
 					var quantizedBytes = ZigZagScan(quantizedFreqs);
 					allQuantizedBytes.AddRange(quantizedBytes);
 				}
@@ -87,7 +89,7 @@ public class JpegProcessor : IJpegProcessor
 						var quantizedBytes = new byte[DCTSize * DCTSize];
 						allQuantizedBytes.ReadAsync(quantizedBytes, 0, quantizedBytes.Length).Wait();
 						var quantizedFreqs = ZigZagUnScan(quantizedBytes);
-						var channelFreqs = DeQuantize(quantizedFreqs, image.Quality);
+						var channelFreqs = DeQuantize(quantizedFreqs);
 						DCT.IDCT2D(channelFreqs, channel);
 						ShiftMatrixValues(channel, 128);
 					}
@@ -193,36 +195,30 @@ public class JpegProcessor : IJpegProcessor
 		};
 	}
 
-	private static byte[,] Quantize(double[,] channelFreqs, int quality)
+	private static byte[,] Quantize(double[,] channelFreqs)
 	{
-		var result = new byte[channelFreqs.GetLength(0), channelFreqs.GetLength(1)];
-		
-		for (int y = 0; y < channelFreqs.GetLength(0); y++)
+		for (var y = 0; y < DCTSize; y++)
 		{
-			for (int x = 0; x < channelFreqs.GetLength(1); x++)
+			for (var x = 0; x < DCTSize; x++)
 			{
-				result[y, x] = (byte)(channelFreqs[y, x] / _quantizationMatrix[y, x]);
+				_quantizedBuffer[y, x] = (byte)(channelFreqs[y, x] / _quantizationMatrix[y, x]);
 			}
 		}
-
-		return result;
+		return _quantizedBuffer;
 	}
 
-	private static double[,] DeQuantize(byte[,] quantizedBytes, int quality)
+	private static double[,] DeQuantize(byte[,] quantizedBytes)
 	{
-		var result = new double[quantizedBytes.GetLength(0), quantizedBytes.GetLength(1)];
-		
-		for (int y = 0; y < quantizedBytes.GetLength(0); y++)
+		for (var y = 0; y < DCTSize; y++)
 		{
-			for (int x = 0; x < quantizedBytes.GetLength(1); x++)
+			for (var x = 0; x < DCTSize; x++)
 			{
-				result[y, x] =
+				_deQuantizedBuffer[y, x] =
 					((sbyte)quantizedBytes[y, x]) *
 					_quantizationMatrix[y, x]; //NOTE cast to sbyte not to loose negative numbers
 			}
 		}
-
-		return result;
+		return _deQuantizedBuffer;
 	}
 
 	private static int[,] GetQuantizationMatrix(int quality)
