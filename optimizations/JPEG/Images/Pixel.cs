@@ -9,31 +9,25 @@ public class Pixel
 
 	public Pixel(double firstComponent, double secondComponent, double thirdComponent, PixelFormat pixelFormat)
 	{
-		if (!new[] { PixelFormat.RGB, PixelFormat.YCbCr }.Contains(pixelFormat))
-			throw new FormatException("Unknown pixel format: " + pixelFormat);
+		switch (pixelFormat)
+		{
+			case PixelFormat.RGB:
+				r = firstComponent;
+				g = secondComponent;
+				b = thirdComponent;
+				break;
+			case PixelFormat.YCbCr:
+				y = firstComponent;
+				cb = secondComponent;
+				cr = thirdComponent;
+				break;
+			default:
+				throw new FormatException("Unknown pixel format: " + pixelFormat);
+		}
 		format = pixelFormat;
-		if (pixelFormat == PixelFormat.RGB)
-		{
-			r = firstComponent;
-			g = secondComponent;
-			b = thirdComponent;
-		}
-
-		if (pixelFormat == PixelFormat.YCbCr)
-		{
-			y = firstComponent;
-			cb = secondComponent;
-			cr = thirdComponent;
-		}
 	}
 
-	private readonly double r;
-	private readonly double g;
-	private readonly double b;
-
-	private readonly double y;
-	private readonly double cb;
-	private readonly double cr;
+	private readonly double r, g, b, y, cb, cr;
 
 	public double R => format == PixelFormat.RGB ? r : (298.082 * y + 408.583 * Cr) / 256.0 - 222.921;
 
