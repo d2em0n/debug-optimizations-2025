@@ -20,13 +20,53 @@ public class DCT
         var width = input.GetLength(1);
         var coeffs = new double[width, height];
         var beta = Beta(height, width);
-
-        for (var u = 0; u < width; u++)
+        var alpha = 1 / Math.Sqrt(2);
+        
+        //u==0 v==0
+        var sum = 0d;
+        for (var x = 0; x < width; x++)
         {
-            for (var v = 0; v < height; v++)
+            for (var y = 0; y < height; y++)
             {
-                var sum = 0d;
+                sum += input[x, y] * CosTable[0, x] * CosTable[0, y];
+            }
+        }
+        coeffs[0, 0] = sum * beta * alpha * alpha;
+        
+        //u==0 v!=0
+        for (var v = 1; v < height; v++)
+        {
+            sum = 0d;
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    sum += input[x, y] * CosTable[0, x] * CosTable[v, y];
+                }
+            }
+            coeffs[0, v] = sum * beta * alpha;
+        }
 
+        //u!=0 v==0
+        for (var u = 1; u < width; u++)
+        {
+            sum = 0d;
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    sum += input[x, y] * CosTable[u, x] * CosTable[0, y];
+                }
+            }
+            coeffs[u, 0] = sum * beta * alpha;
+        }
+
+        // u!=0  v!=0
+        for (var u = 1; u < width; u++)
+        {
+            for (var v = 1; v < height; v++)
+            {
+                sum = 0d;
                 for (var x = 0; x < width; x++)
                 {
                     for (var y = 0; y < height; y++)
@@ -34,7 +74,7 @@ public class DCT
                         sum += input[x, y] * CosTable[u, x] * CosTable[v, y];
                     }
                 }
-                coeffs[u, v] = sum * beta * Alpha(u) * Alpha(v);
+                coeffs[u, v] = sum * beta;
             }
         }
         return coeffs;
@@ -45,29 +85,38 @@ public class DCT
         var height = coeffs.GetLength(0);
         var width = coeffs.GetLength(1);
         var beta = Beta(height, width);
+        var alpha = 1 / Math.Sqrt(2);
+        
         for (var x = 0; x <width; x++)
         {
             for (var y = 0; y < height; y++)
             {
                 var sum = 0d;
-                for (var u = 0; u < width; u++)
+                
+                //u==0 v==0
+                sum += coeffs[0, 0] * CosTable[0, x] * CosTable[0, y] * alpha * alpha; 
+
+                // u==0 v!=0
+                for (var v = 1; v < height; v++)
+                    sum += coeffs[0, v] * CosTable[0, x] * CosTable[v, y] * alpha;
+                
+                //u!=0 v==0
+                for (var u = 1; u < width; u++)
                 {
-                    for (var v = 0; v < height; v++)
+                    sum += coeffs[u, 0] * CosTable[u, x] * CosTable[0, y] * alpha;
+                }
+
+                //u!=0 v!=0
+                for (var u = 1; u < width; u++)
+                {
+                    for (var v = 1; v < height; v++)
                     {
-                        sum += coeffs[u, v] * CosTable[u, x] * CosTable[v, y] *
-                            Alpha(u) * Alpha(v);
+                        sum += coeffs[u, v] * CosTable[u, x] * CosTable[v, y];
                     }
                 }
                 output[x, y] = sum * beta;
             }
         }
-    }
-
-    private static double Alpha(int u)
-    {
-        if (u == 0)
-            return 1 / Math.Sqrt(2);
-        return 1;
     }
 
     private static double Beta(int height, int width)
