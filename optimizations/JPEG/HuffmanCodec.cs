@@ -140,18 +140,25 @@ class HuffmanCodec
 		return result;
 	}
 
-	private static void FillEncodeTable(HuffmanNode node, BitsWithLength[] encodeSubstitutionTable,
-		int bitvector = 0, int depth = 0)
+	private static void FillEncodeTable(HuffmanNode root, BitsWithLength[] encodeSubstitutionTable)
 	{
-		if (node.LeafLabel != null)
-			encodeSubstitutionTable[node.LeafLabel.Value] =
-				new BitsWithLength { Bits = bitvector, BitsCount = depth };
-		else
+		var stack = new Stack<(HuffmanNode Node, int Bitvector, int Depth)>();
+		stack.Push((root, 0, 0));
+
+		while (stack.Count > 0)
 		{
-			if (node.Left != null)
+			var (node, bitvector, depth) = stack.Pop();
+
+			if (node.LeafLabel != null)
 			{
-				FillEncodeTable(node.Left, encodeSubstitutionTable, (bitvector << 1) + 1, depth + 1);
-				FillEncodeTable(node.Right, encodeSubstitutionTable, (bitvector << 1) + 0, depth + 1);
+				encodeSubstitutionTable[node.LeafLabel.Value] = new BitsWithLength { Bits = bitvector, BitsCount = depth };
+			}
+			else
+			{
+				if (node.Right != null)
+					stack.Push((node.Right, (bitvector << 1) + 0, depth + 1));
+				if (node.Left != null)
+					stack.Push((node.Left, (bitvector << 1) + 1, depth + 1));
 			}
 		}
 	}
