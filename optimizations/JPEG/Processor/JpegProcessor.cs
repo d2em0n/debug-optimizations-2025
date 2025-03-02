@@ -43,10 +43,12 @@ public class JpegProcessor : IJpegProcessor
 	private static CompressedImage Compress(Matrix matrix, int quality = 50)
 	{
 		var allQuantizedBytes = new List<byte>();
+		var height = matrix.Height;
+		var width = matrix.Width;
 
-		for (var y = 0; y < matrix.Height; y += DCTSize)
+		for (var y = 0; y < height; y += DCTSize)
 		{
-			for (var x = 0; x < matrix.Width; x += DCTSize)
+			for (var x = 0; x < width; x += DCTSize)
 			{
 				foreach (var selector in new Func<Pixel, float>[] { p => p.Y, p => p.Cb, p => p.Cr })
 				{
@@ -73,13 +75,15 @@ public class JpegProcessor : IJpegProcessor
 
 	private static Matrix Uncompress(CompressedImage image)
 	{
-		var result = new Matrix(image.Height, image.Width);
+		var height = image.Height;
+		var width = image.Width;
+		var result = new Matrix(height, width);
 		using (var allQuantizedBytes =
 		       new MemoryStream(HuffmanCodec.Decode(image.CompressedBytes, image.DecodeTable, image.BitsCount)))
 		{
-			for (var y = 0; y < image.Height; y += DCTSize)
+			for (var y = 0; y < height; y += DCTSize)
 			{
-				for (var x = 0; x < image.Width; x += DCTSize)
+				for (var x = 0; x < width; x += DCTSize)
 				{
 					var _y = new float[DCTSize, DCTSize];
 					var cb = new float[DCTSize, DCTSize];
