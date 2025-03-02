@@ -182,12 +182,19 @@ class HuffmanCodec
 		return nodes.Dequeue(); 
 	}
 
-	private static IEnumerable<HuffmanNode> GetNodes(int[] frequences)
+	private static IEnumerable<HuffmanNode> GetNodes(int[] frequencies)
 	{
-		return Enumerable.Range(0, byte.MaxValue + 1)
-			.Select(num => new HuffmanNode { Frequency = frequences[num], LeafLabel = (byte)num })
-			.Where(node => node.Frequency > 0)
-			.ToArray();
+		var nodes = new List<HuffmanNode>();
+
+		for (var i = 0; i < frequencies.Length; i++)
+		{
+			if (frequencies[i] > 0)
+			{
+				nodes.Add(new HuffmanNode { Frequency = frequencies[i], LeafLabel = (byte)i });
+			}
+		}
+
+		return nodes;
 	}
 
 	private static int[] CalcFrequences(IEnumerable<byte> data)
